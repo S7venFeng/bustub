@@ -44,10 +44,12 @@ bool LRUReplacer::Victim(frame_id_t *id) {
 //        return false;
 //    }
     for (auto iter = lru_list.begin(); iter != lru_list.end(); ++iter) {
-        if (GetPinCount(*iter) == 0 && *iter == id) {
+        if (GetPinCount(*iter) == 0) {
             lruMutex.lock();
+            *id = *iter;
             lru_list.erase(iter);
             lruMutex.unlock();
+            ReleasePinLock();
             return true;
         }
     }
@@ -76,7 +78,7 @@ void LRUReplacer::Unpin(frame_id_t id) {
         lruMutex.unlock();
     }
 //    pinLatch_.unlock();
-//    ReleasePinLock();
+    ReleasePinLock();
     return;
 }
 
