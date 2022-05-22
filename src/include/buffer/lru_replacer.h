@@ -18,9 +18,18 @@
 
 #include "buffer/replacer.h"
 #include "common/config.h"
+#include "storage/page/page.h"
 
 namespace bustub {
 
+//    typedef struct LRUlist {
+//        frame_id_t pageId;
+//        int64_t pinCount;
+//        LRUlist* prevSlot;
+//        LRUlist* nextSlot;
+//    }lruList;
+//
+//    using LRUList = lruList*;
 /**
  * LRUReplacer implements the Least Recently Used replacement policy.
  */
@@ -45,8 +54,14 @@ class LRUReplacer : public Replacer {
 
   size_t Size() override;
 
+  int getPinCount(frame_id_t id);
  private:
   // TODO(student): implement me!
+  size_t lruSize_ = 0;
+  std::unordered_map<frame_id_t, int> bufPinCnt;
+  std::mutex pinLatch_;
+  std::mutex lruMutex;
+  std::list<frame_id_t> lru_list;
 };
 
 }  // namespace bustub

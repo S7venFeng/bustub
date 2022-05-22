@@ -58,6 +58,7 @@ class BufferPoolManagerInstance : public BufferPoolManager {
   /** @return pointer to all the pages in the buffer pool */
   Page *GetPages() { return pages_; }
 
+
  protected:
   /**
    * Fetch the requested page from the buffer pool.
@@ -100,6 +101,7 @@ class BufferPoolManagerInstance : public BufferPoolManager {
    */
   void FlushAllPgsImp() override;
 
+  Page *GetPage(page_id_t page_id);
   /**
    * Allocate a page on disk.∂
    * @return the id of the allocated page
@@ -143,6 +145,6 @@ class BufferPoolManagerInstance : public BufferPoolManager {
   /** List of free pages. */
   std::list<frame_id_t> free_list_;
   /** This latch protects shared data structures. We recommend updating this comment to describe what it protects. */
-  std::mutex latch_;
+  std::mutex bufTabMutex;
 };
 }  // namespace bustub
