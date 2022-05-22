@@ -128,10 +128,10 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
       replacer_->Pin(frameId);
       return p;
   } else {
-      bool hasFree = true;
+//      bool hasFree = true;
       frame_id_t frameId;
       if (free_list_.empty()) {
-          hasFree = false;
+//          hasFree = false;
           bool evcit = replacer_->Victim(&frameId);
           if (!evcit) {
               return nullptr;
@@ -168,7 +168,7 @@ bool BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) {
     if (page_table_.count(page_id) > 0) {
         frame_id_t frameId = page_table_[page_id];
         LRUReplacer* lruRelacer_ = dynamic_cast<LRUReplacer*>(replacer_);
-        if (lruRelacer_->getPinCount(frameId)) {
+        if (lruRelacer_->GetPinCount(frameId)) {
             lruRelacer_->ReleasePinLock();
             return false;
         }

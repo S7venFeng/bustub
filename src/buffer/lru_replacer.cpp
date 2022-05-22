@@ -32,7 +32,7 @@ bool LRUReplacer::Victim(frame_id_t *id) {
     int len = lru_list.size();
     int evcitIdx = -1;
     for (int i = 0; i < len; ++i) {
-        if (getPinCount(i) == 0) {
+        if (GetPinCount(i) == 0) {
             pinLatch_.unlock();
             evcitIdx = i;
             break;
