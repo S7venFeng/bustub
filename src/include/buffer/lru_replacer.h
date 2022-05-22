@@ -55,15 +55,18 @@ class LRUReplacer : public Replacer {
 
   size_t Size() override;
 
+  void AddPinCount(frame_id_t id);
+
   int GetPinCount(frame_id_t id);
 
   void SetPinCount(frame_id_t id);
 
   void ReleasePinLock();
+  
   void GetPinLock();
  private:
   // TODO(student): implement me!
-  size_t lruSize_ = 0;
+  size_t max_page_size_ = 0;
   std::unordered_map<frame_id_t, int> bufPinCnt;
   std::mutex pinLatch_;
   std::mutex lruMutex;
