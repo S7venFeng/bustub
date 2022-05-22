@@ -15,6 +15,7 @@
 #include <list>
 #include <mutex>  // NOLINT
 #include <vector>
+#include <unordered_map>
 
 #include "buffer/replacer.h"
 #include "common/config.h"
@@ -54,7 +55,12 @@ class LRUReplacer : public Replacer {
 
   size_t Size() override;
 
-  int getPinCount(frame_id_t id);
+  int GetPinCount(frame_id_t id);
+
+  void SetPinCount(frame_id_t id);
+
+  void ReleasePinLock();
+  void GetPinLock();
  private:
   // TODO(student): implement me!
   size_t lruSize_ = 0;

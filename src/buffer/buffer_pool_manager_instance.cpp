@@ -60,31 +60,31 @@ bool BufferPoolManagerInstance::FlushPgImp(page_id_t page_id) {
     const char *page_data = p->GetData();
     // PIN page First
     replacer_->Pin(frameId);
-    WritePage(page_id, page_data);
+    disk_manager_->WritePage(page_id, page_data);
     return true;
 }
 
 void BufferPoolManagerInstance::FlushAllPgsImp() {
   // You can do it!
-  Pages* pages = GetPages();
+  Page* pages = GetPages();
   int poolSize = GetPoolSize();
   for (int i = 0; i < poolSize; ++i) {
-      Pages* cur = pages + i * PAGE_SIZE;
+      Page* cur = pages + i * PAGE_SIZE;
       const char *page_data = cur->GetData();
-      WritePage(page_id, page_data);
+      disk_manager_->WritePage(cur->page_id_, page_data);
   }
 }
 
-Page *GetFreeBufId()
-{
-    Pages* pages = GetPages();
-    int poolSize = GetPoolSize();
-    for (int i = 0; i < poolSize; ++i) {
-        Pages* cur = pages + i * PAGE_SIZE;
-        const char *page_data = cur->GetData();
-        WritePage(page_id, page_data);
-    }
-}
+//Page* BufferPoolManagerInstance::GetFreeBufId()
+//{
+//    Pages* pages = GetPages();
+//    int poolSize = GetPoolSize();
+//    for (int i = 0; i < poolSize; ++i) {
+//        Pages* cur = pages + i * PAGE_SIZE;
+//        const char *page_data = cur->GetData();
+//        disk_manager_->WritePage(page_id, page_data);
+//    }
+//}
 Page *BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) {
   // 0.   Make sure you call AllocatePage!
   // 1.   If all the pages in the buffer pool are pinned, return nullptr.
@@ -137,7 +137,8 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
               return nullptr;
           }
           Page* r = GetPage(frameId);
-          ReadPage(page_id, GetPages() + frameId * PAGE_SIZE);
+          char *page_data = GetPages()->GetData() + frameId * PAGE_SIZE;
+          disk_manager_->ReadPage(page_id, page_data);
           r->page_id_ = page_id;
           return r;
       } else {
@@ -147,7 +148,8 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
           if (r->IsDirty()) {
               FlushPgImp(r->GetPageId());
           }
-          ReadPage(page_id, GetPages() + frameId * PAGE_SIZE);
+          char *page_data = GetPages()->GetData() + frameId * PAGE_SIZE;
+          disk_manager_->ReadPage(page_id, page_data);
           r->page_id_ = page_id;
           return r;
       }
@@ -165,7 +167,11 @@ bool BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) {
   // 3.   Otherwise, P can be deleted. Remove P from the page table, reset its metadata and return it to the free list.
     if (page_table_.count(page_id) > 0) {
         frame_id_t frameId = page_table_[page_id];
-        if (replacer_->getPinCount(frameId)) return false;
+        LRUReplacer* lruRelacer_ = dynamic_cast<LRUReplacer*>(replacer_);
+        if (lruRelacer_->getPinCount(frameId)) {
+            lruRelacer_->ReleasePinLock();
+            return false;
+        }
         bufTabMutex.lock();
         page_table_.erase(page_id);
         bufTabMutex.unlock();

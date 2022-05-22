@@ -85,10 +85,6 @@ class BufferPoolManager {
     GradingCallback(callback, CallbackType::AFTER, INVALID_PAGE_ID);
   }
 
-//  char* bufferPool_;
-    std::vector<page_id_t> bufferPool_(BUFFER_POOL_SIZE);
-
-
   /** @return size of the buffer pool */
   virtual size_t GetPoolSize() = 0;
 
