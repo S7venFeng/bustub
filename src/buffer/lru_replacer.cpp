@@ -44,7 +44,7 @@ bool LRUReplacer::Victim(frame_id_t *id) {
 //        return false;
 //    }
     for (auto iter = lru_list.begin(); iter != lru_list.end(); ++iter) {
-        if (GetPinCount(*iter) == 0 && *iter == evcitIdx) {
+        if (GetPinCount(*iter) == 0 && *iter == id) {
             lruMutex.lock();
             lru_list.erase(iter);
             lruMutex.unlock();
@@ -72,7 +72,7 @@ void LRUReplacer::Unpin(frame_id_t id) {
     SetPinCount(id);
     if (GetPinCount(id) <= 0) {
         lruMutex.lock();
-        lru_list.push_back(iter);
+        lru_list.push_back(id);
         lruMutex.unlock();
     }
 //    pinLatch_.unlock();

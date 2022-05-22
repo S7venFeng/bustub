@@ -62,7 +62,7 @@ class LRUReplacer : public Replacer {
   void SetPinCount(frame_id_t id);
 
   void ReleasePinLock();
-  
+
   void GetPinLock();
  private:
   // TODO(student): implement me!
