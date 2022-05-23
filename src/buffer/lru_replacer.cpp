@@ -62,6 +62,7 @@ void LRUReplacer::Pin(frame_id_t id) {
         if (*iter == id) {
             lruMutex.lock();
             lru_list.erase(iter);
+            bufPinCnt.erase(id);
             lruMutex.unlock();
             break;
         }
@@ -71,6 +72,7 @@ void LRUReplacer::Pin(frame_id_t id) {
 
 void LRUReplacer::Unpin(frame_id_t id) {
     if (lru_list.size() == max_page_size_) return;
+    if (bufPinCnt.count(id)) return;
     SetPinCount(id);
     if (GetPinCount(id) <= 0) {
         lruMutex.lock();
