@@ -32,7 +32,9 @@ LRUReplacer::~LRUReplacer() {
 
 bool LRUReplacer::Victim(frame_id_t *id) {
     if (lru_list.empty()) return false;
-    *id = *lru_list.begin();
+    frame_id_t ecvit = *lru_list.begin();
+    PIN(ecvit);
+    *id = ecvit;
     return true;
 //    for (auto iter = lru_list.begin(); iter != lru_list.end(); ++iter) {
 //        if (GetPinCount(*iter) == 0) {
