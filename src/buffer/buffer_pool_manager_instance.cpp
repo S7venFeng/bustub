@@ -100,7 +100,7 @@ Page *BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) {
         }
         page_table_[nextPage] = freeOne;
         Page* freePage = GetPage(freeOne);
-        freePage->page_id_ = nextPage;
+//        freePage->page_id_ = nextPage;
         *page_id = nextPage;
         return freePage;
     } else {
@@ -108,7 +108,7 @@ Page *BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) {
         page_table_[nextPage] = freeOne;
         free_list_.pop_front();
         Page* freePage = GetPage(freeOne);
-        freePage->page_id_ = nextPage;
+//        freePage->page_id_ = nextPage;
         *page_id = nextPage;
         return freePage;
     }

@@ -21,48 +21,42 @@ LRUReplacer::LRUReplacer(size_t num_pages) {
 //    free_list->nextSlot = NULL;
 //    free_list->pageId = INVALID_PAGE_ID;
 //    lruSize_ = 0;
+    lru_list.clear();
+    bufPinCnt.clear();
     max_page_size_ = num_pages;
 }
 
 LRUReplacer::~LRUReplacer() {
-//    free(lru_list);
     max_page_size_ = 0;
 }
 
 bool LRUReplacer::Victim(frame_id_t *id) {
-//    int len = lru_list.size();
-//    int evcitIdx = -1;
-//    for (int i = 0; i < len; ++i) {
-//        if (GetPinCount(i) == 0) {
-//            pinLatch_.unlock();
-//            evcitIdx = i;
-//            break;
+    if (lru_list.empty()) return false;
+    *id = *lru_list.begin();
+    return true;
+//    for (auto iter = lru_list.begin(); iter != lru_list.end(); ++iter) {
+//        if (GetPinCount(*iter) == 0) {
+//            lruMutex.lock();
+//            *id = *iter;
+//            lru_list.erase(iter);
+//            lruMutex.unlock();
+//            ReleasePinLock();
+//            return true;
 //        }
 //    }
-//    if (evcitIdx == -1) {
-//        // all pinned
-//        return false;
-//    }
-    for (auto iter = lru_list.begin(); iter != lru_list.end(); ++iter) {
-        if (GetPinCount(*iter) == 0) {
-            lruMutex.lock();
-            *id = *iter;
-            lru_list.erase(iter);
-            lruMutex.unlock();
-            ReleasePinLock();
-            return true;
-        }
-    }
-    return false;
+//    return false;
 }
 
 void LRUReplacer::Pin(frame_id_t id) {
-    AddPinCount(id);
+//    AddPinCount(id);
+    if (!bufPinCnt.count(id)) return;
     for (auto iter = lru_list.begin(); iter != lru_list.end(); ++iter) {
         if (*iter == id) {
             lruMutex.lock();
             lru_list.erase(iter);
+            pinLatch_.lock();
             bufPinCnt.erase(id);
+            pinLatch_.unlock();
             lruMutex.unlock();
             break;
         }
@@ -73,14 +67,21 @@ void LRUReplacer::Pin(frame_id_t id) {
 void LRUReplacer::Unpin(frame_id_t id) {
     if (lru_list.size() == max_page_size_) return;
     if (bufPinCnt.count(id)) return;
-    SetPinCount(id);
-    if (GetPinCount(id) <= 0) {
-        lruMutex.lock();
-        lru_list.push_back(id);
-        lruMutex.unlock();
-    }
-//    pinLatch_.unlock();
-    ReleasePinLock();
+    lruMutex.lock();
+    pinLatch_.lock();
+    bufPinCnt[id] = 0;
+    pinLatch_.unlock();
+    lru_list.push_back(id);
+    lruMutex.unlock();
+
+//    SetPinCount(id);
+//    if (GetPinCount(id) <= 0) {
+//        lruMutex.lock();
+//        lru_list.push_back(id);
+//        lruMutex.unlock();
+//    }
+////    pinLatch_.unlock();
+//    ReleasePinLock();
     return;
 }
 
