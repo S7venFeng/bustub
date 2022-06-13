@@ -59,7 +59,7 @@ bool BufferPoolManagerInstance::FlushPgImp(page_id_t page_id) {
     Page* p = GetPage(frameId);
     const char *page_data = p->GetData();
     // PIN page First
-    replacer_->Pin(frameId);
+//    replacer_->Pin(frameId);
     disk_manager_->WritePage(page_id, page_data);
     return true;
 }
@@ -92,6 +92,19 @@ Page *BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) {
   // 3.   Update P's metadata, zero out memory and add P to the page table.
   // 4.   Set the page ID output parameter. Return a pointer to P.
     page_id_t nextPage = AllocatePage();
+    Page* pages = GetPages();
+    int len = GetPoolSize();
+    bool hasFreeSlot = false;
+//    int slot = -1;
+    for (int i = 0; i < len; ++i) {
+        Page* curPage = pages + i * PAGE_SIZE;
+        if (curPage->GetPinCount()) {
+            hasFreeSlot = true;
+//            slot = i;
+            break;
+        }
+    }
+    if (!hasFreeSlot) return nullptr;
     if (free_list_.empty()) {
         frame_id_t freeOne;
         bool evcit = replacer_->Victim(&freeOne);
@@ -100,15 +113,15 @@ Page *BufferPoolManagerInstance::NewPgImp(page_id_t *page_id) {
         }
         page_table_[nextPage] = freeOne;
         Page* freePage = GetPage(freeOne);
-//        freePage->page_id_ = nextPage;
+        freePage->ResetMemory();
         *page_id = nextPage;
         return freePage;
     } else {
-        frame_id_t freeOne = *free_list_.begin();
-        page_table_[nextPage] = freeOne;
+        frame_id_t slot = *free_list_.begin();
+        page_table_[nextPage] = slot;
         free_list_.pop_front();
         Page* freePage = GetPage(freeOne);
-//        freePage->page_id_ = nextPage;
+        freePage->ResetMemory();
         *page_id = nextPage;
         return freePage;
     }
@@ -137,9 +150,14 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
               return nullptr;
           }
           Page* r = GetPage(frameId);
-          char *page_data = GetPages()->GetData() + frameId * PAGE_SIZE;
-          disk_manager_->ReadPage(page_id, page_data);
+          if (r->is_dirty_) {
+              FlushPgImp(r->GetPageId());
+          }
+          page_table_.erase(r->GetPageId());
+          page_table_[page_id] = frameId;
+          r->ResetMemory();
           r->page_id_ = page_id;
+          disk_manager_->ReadPage(page_id, r->GetData());
           return r;
       } else {
           auto iter = free_list_.begin();
@@ -148,12 +166,13 @@ Page *BufferPoolManagerInstance::FetchPgImp(page_id_t page_id) {
           if (r->IsDirty()) {
               FlushPgImp(r->GetPageId());
           }
-          char *page_data = GetPages()->GetData() + frameId * PAGE_SIZE;
-          disk_manager_->ReadPage(page_id, page_data);
+          page_table_.erase(r->GetPageId());
+          page_table_[page_id] = frameId;
+          r->ResetMemory();
           r->page_id_ = page_id;
+          disk_manager_->ReadPage(page_id, r->GetData());
           return r;
       }
-
   }
 
   return nullptr;
@@ -166,16 +185,12 @@ bool BufferPoolManagerInstance::DeletePgImp(page_id_t page_id) {
   // 2.   If P exists, but has a non-zero pin-count, return false. Someone is using the page.
   // 3.   Otherwise, P can be deleted. Remove P from the page table, reset its metadata and return it to the free list.
     if (page_table_.count(page_id) > 0) {
-        frame_id_t frameId = page_table_[page_id];
-        LRUReplacer* lruRelacer_ = dynamic_cast<LRUReplacer*>(replacer_);
-        if (lruRelacer_->GetPinCount(frameId)) {
-            lruRelacer_->ReleasePinLock();
-            return false;
-        }
-        bufTabMutex.lock();
+        frame_id_t slot = page_table_[page_id];
+        Page* p = GetPage(page_id);
+        if (p->GetPinCount()) return false;
         page_table_.erase(page_id);
-        bufTabMutex.unlock();
-        free_list_.push_back(frameId);
+        p->ResetMemory();
+        free_list_.push_back(slot);
     } else {
         return true;
     }
